@@ -193,7 +193,7 @@ export default function Home() {
           {loading && (
             <div className="loader animate-fade-in">
               <div className="spinner"></div>
-              <div>Kalkuluji Whoop Recovery & AI doporučení...</div>
+              <div>Kalkuluji Recovery & AI doporučení...</div>
             </div>
           )}
 

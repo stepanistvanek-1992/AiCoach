@@ -40,17 +40,16 @@ export async function POST(req: Request) {
     const ai = new GoogleGenAI({ apiKey });
     
     const prompt = `
-Jsi elitní sportovní fyziolog a osobní "Whoop Coach" pro sportovce s chronickými zánětlivými procesy.
-Analyzuj dnešní fyziologická data a navrhni denní plán.
+Jsi elitní sportovní fyziolog a osobní "Recovery Coach" pro sportovce s chronickými zánětlivými procesy.
+Tvým cílem je na základě dnešních ranních metrik navrhnout optimální úroveň aktivity tak, abys maximalizoval fitness, ale ABSOLUTNĚ ZABRÁNIL přetrénování a rozvoji zánětu.
 
-PROFIL: Muž, 183 cm, 80 kg. Cíle: Běh (2x týdně), Kolo (1x týdně), Cvičení. Náchylný na záněty.
 FILOZOFIE:
 1. Ochrana imunity a prevence přetrénování.
 2. Progresivní rozvoj (Superkompenzace) pouze při Zelených dnech (Recovery > 66%).
 
-DNESNÍ DATA:
-- Včerejší reálná aktivita: ${yesterdayActivity}
-- Whoop Recovery Score: ${recoveryScore}%
+KONTEXT:
+- Recovery Score: ${recoveryScore}%
+- Včerejší trénink: ${yesterdayActivity}
 - RHR: ${garminData.rhr} bpm
 - Body Battery: ${garminData.bodyBattery}
 - Spánek: ${garminData.sleep}h
