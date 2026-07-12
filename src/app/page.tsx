@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { supabase, TrainingRecord } from '@/utils/supabase';
+import type { TrainingRecord } from '@/utils/supabase';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
 
 export default function Home() {
@@ -31,13 +31,15 @@ export default function Home() {
 
   const loadHistory = async () => {
     setLoadingHistory(true);
-    const { data, error } = await supabase
-      .from('training_history')
-      .select('*')
-      .order('date', { ascending: false })
-      .limit(10);
-    
-    if (data) setHistory(data);
+    try {
+      const res = await fetch('/api/history');
+      const json = await res.json();
+      if (json.data) {
+        setHistory(json.data);
+      }
+    } catch (err) {
+      console.error("Failed to load history:", err);
+    }
     setLoadingHistory(false);
   };
 
