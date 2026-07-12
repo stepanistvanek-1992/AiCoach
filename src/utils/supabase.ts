@@ -29,12 +29,37 @@ export const getHistory = async (): Promise<TrainingRecord[]> => {
 };
 
 export const savePlan = async (record: TrainingRecord) => {
-  const { error } = await supabase
+  // 1. Zkontrolujeme, jestli už pro dnešek existuje záznam
+  const { data: existing, error: fetchError } = await supabase
     .from('training_history')
-    .upsert([record], { onConflict: 'date' });
+    .select('id')
+    .eq('date', record.date);
 
-  if (error) {
-    console.error('Error saving plan:', error);
-    throw new Error('Failed to save plan to database.');
+  if (fetchError) {
+    console.error('Error fetching plan:', fetchError);
+    throw new Error('Failed to check existing plan.');
+  }
+
+  if (existing && existing.length > 0) {
+    // 2. Pokud existuje, updatujeme ho
+    const { error: updateError } = await supabase
+      .from('training_history')
+      .update(record)
+      .eq('id', existing[0].id);
+
+    if (updateError) {
+      console.error('Error updating plan:', updateError);
+      throw new Error('Failed to update plan in database.');
+    }
+  } else {
+    // 3. Pokud neexistuje, vytvoříme nový
+    const { error: insertError } = await supabase
+      .from('training_history')
+      .insert([record]);
+
+    if (insertError) {
+      console.error('Error saving plan:', insertError);
+      throw new Error('Failed to save plan to database.');
+    }
   }
 };
