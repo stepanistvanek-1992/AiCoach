@@ -42,6 +42,26 @@ export default function Home() {
     setLoadingHistory(false);
   };
 
+  const handleDelete = async (id: string | undefined) => {
+    if (!id) return;
+    if (!confirm('Opravdu chceš tento záznam smazat?')) return;
+    
+    try {
+      const res = await fetch('/api/history', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      if (res.ok) {
+        setHistory(history.filter(r => r.id !== id));
+      } else {
+        alert('Smazání se nezdařilo.');
+      }
+    } catch (err) {
+      alert('Došlo k chybě při mazání.');
+    }
+  };
+
   const parseChartData = () => {
     return history.map(r => {
       let recovery = 0, rhr = 0, bb = 0, sleep = 0;
@@ -287,6 +307,13 @@ export default function Home() {
                           <strong style={{ color: color, fontSize: '1.2rem' }}>{score}%</strong>
                         </div>
                       )}
+                      <button 
+                        onClick={() => handleDelete(record.id)}
+                        style={{ background: 'transparent', border: 'none', color: 'var(--accent-red)', cursor: 'pointer', padding: '0.5rem', fontSize: '1.2rem' }}
+                        title="Smazat záznam"
+                      >
+                        🗑️
+                      </button>
                     </div>
                     
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem', background: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: '8px' }}>
