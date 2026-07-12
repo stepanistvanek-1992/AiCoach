@@ -5,19 +5,18 @@ import { getHistory, savePlan } from '@/utils/supabase';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { feeling, rhr, bodyBattery, sleep, hrv, yesterdayActivity } = body;
+    const { feeling, rhr, bodyBattery, sleep, yesterdayActivity } = body;
 
     const garminData = {
       rhr: rhr || 50,
       bodyBattery: bodyBattery || 80,
       sleep: sleep || 8.0,
-      hrv: hrv || 45,
     };
     
     // Whoop-like Recovery Calculation (0-100)
-    // Váhy: Body Battery (50%), Sleep (30%), RHR/HRV (20%)
+    // Váhy: Body Battery (60%), Sleep (40%)
     let sleepScore = Math.min((garminData.sleep / 8) * 100, 100);
-    let recoveryScore = Math.round((garminData.bodyBattery * 0.5) + (sleepScore * 0.3) + (garminData.hrv > 40 ? 20 : 10));
+    let recoveryScore = Math.round((garminData.bodyBattery * 0.6) + (sleepScore * 0.4));
     if (recoveryScore > 100) recoveryScore = 100;
 
     // Fetch real history for context
@@ -55,7 +54,6 @@ DNESNÍ DATA:
 - RHR: ${garminData.rhr} bpm
 - Body Battery: ${garminData.bodyBattery}
 - Spánek: ${garminData.sleep}h
-- HRV: ${garminData.hrv} ms
 - Subjektivní pocit: ${feeling}
 - Historie (posledních pár dní): ${JSON.stringify(history)}
 
@@ -103,7 +101,7 @@ VÝSTUP (Markdown, formátuj jako AI kouč):
       await savePlan({
         date: new Date().toISOString().split('T')[0],
         feeling: feeling,
-        activity: `[Včera: ${yesterdayActivity}] Recovery: ${recoveryScore}% | RHR: ${garminData.rhr} | BB: ${garminData.bodyBattery} | Spánek: ${garminData.sleep}h | HRV: ${garminData.hrv}`,
+        activity: `[Včera: ${yesterdayActivity}] Recovery: ${recoveryScore}% | RHR: ${garminData.rhr} | BB: ${garminData.bodyBattery} | Spánek: ${garminData.sleep}h`,
         ai_recommendation: planText
       });
     } catch (saveErr) {

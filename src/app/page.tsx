@@ -13,7 +13,6 @@ export default function Home() {
   const [rhr, setRhr] = useState('50');
   const [bodyBattery, setBodyBattery] = useState('80');
   const [sleep, setSleep] = useState('7.5');
-  const [hrv, setHrv] = useState('45');
   const [yesterdayActivity, setYesterdayActivity] = useState('Odpočinek / Nic');
   
   const [loading, setLoading] = useState(false);
@@ -45,7 +44,7 @@ export default function Home() {
 
   const parseChartData = () => {
     return history.map(r => {
-      let recovery = 0, rhr = 0, bb = 0, sleep = 0, hrv = 0;
+      let recovery = 0, rhr = 0, bb = 0, sleep = 0;
       
       const recMatch = r.activity.match(/Recovery: (\d+)%/);
       if(recMatch) recovery = parseInt(recMatch[1]);
@@ -53,11 +52,8 @@ export default function Home() {
       const rhrMatch = r.activity.match(/RHR: (\d+)/);
       if(rhrMatch) rhr = parseInt(rhrMatch[1]);
       
-      const hrvMatch = r.activity.match(/HRV: (\d+)/);
-      if(hrvMatch) hrv = parseInt(hrvMatch[1]);
-      
       const dateStr = new Date(r.date).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' });
-      return { date: dateStr, recovery, rhr, hrv };
+      return { date: dateStr, recovery, rhr };
     }).reverse(); // Pro graf chceme nejstarší zleva doprava
   };
 
@@ -81,7 +77,6 @@ export default function Home() {
           rhr: parseInt(rhr) || 50,
           bodyBattery: parseInt(bodyBattery) || 80,
           sleep: parseFloat(sleep) || 8.0,
-          hrv: parseInt(hrv) || 45,
           yesterdayActivity
         })
       });
@@ -163,10 +158,6 @@ export default function Home() {
                   <label htmlFor="rhr">Klidovka (RHR)</label>
                   <input type="number" id="rhr" value={rhr} onChange={(e) => setRhr(e.target.value)} />
                 </div>
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label htmlFor="hrv">HRV (ms)</label>
-                  <input type="number" id="hrv" value={hrv} onChange={(e) => setHrv(e.target.value)} />
-                </div>
               </div>
 
               <button className="btn" onClick={handleGenerate} disabled={loading}>
@@ -207,7 +198,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="metrics-grid">
+                <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
                   <div className="metric-item">
                     <div className="metric-value">{bodyBattery}</div>
                     <div className="metric-label">B. Battery</div>
@@ -215,10 +206,6 @@ export default function Home() {
                   <div className="metric-item">
                     <div className="metric-value">{sleep}h</div>
                     <div className="metric-label">Spánek</div>
-                  </div>
-                  <div className="metric-item">
-                    <div className="metric-value">{hrv}</div>
-                    <div className="metric-label">HRV</div>
                   </div>
                 </div>
               </div>
@@ -263,18 +250,15 @@ export default function Home() {
               </div>
 
               <div className="glass-card" style={{ padding: '1rem', marginBottom: '2rem' }}>
-                <h3 style={{ color: 'var(--text-secondary)', marginBottom: '1rem', textAlign: 'center' }}>Zdravotní Metriky (HRV & RHR)</h3>
+                <h3 style={{ color: 'var(--text-secondary)', marginBottom: '1rem', textAlign: 'center' }}>Klidová tepovka (RHR)</h3>
                 <div style={{ width: '100%', height: 200 }}>
                   <ResponsiveContainer>
                     <LineChart data={parseChartData()} margin={{ top: 5, right: 5, left: -25, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
                       <XAxis dataKey="date" stroke="rgba(255,255,255,0.5)" fontSize={12} tickMargin={10} />
-                      <YAxis yAxisId="left" stroke="rgba(255,255,255,0.5)" fontSize={12} domain={['dataMin - 5', 'dataMax + 5']} />
-                      <YAxis yAxisId="right" orientation="right" stroke="rgba(255,255,255,0.5)" fontSize={12} domain={['dataMin - 2', 'dataMax + 2']} />
+                      <YAxis stroke="rgba(255,255,255,0.5)" fontSize={12} domain={['dataMin - 2', 'dataMax + 2']} />
                       <Tooltip contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: 'none', borderRadius: '8px', color: 'white' }} />
-                      <Legend wrapperStyle={{ fontSize: '12px' }} />
-                      <Line yAxisId="left" type="monotone" name="HRV (ms)" dataKey="hrv" stroke="var(--accent-blue)" strokeWidth={2} dot={{ r: 3 }} />
-                      <Line yAxisId="right" type="monotone" name="RHR (bpm)" dataKey="rhr" stroke="var(--accent-red)" strokeWidth={2} dot={{ r: 3 }} />
+                      <Line type="monotone" name="RHR (bpm)" dataKey="rhr" stroke="var(--accent-red)" strokeWidth={3} dot={{ r: 4, fill: "var(--accent-red)" }} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
