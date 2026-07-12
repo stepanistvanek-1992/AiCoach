@@ -6,7 +6,7 @@ import type { TrainingRecord } from '@/utils/supabase';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
 
 export default function Home() {
-  const [tab, setTab] = useState<'checkin' | 'dashboard'>('checkin');
+  const [tab, setTab] = useState<'checkin' | 'dashboard'>('dashboard');
   
   // Check-in stavy
   const [feeling, setFeeling] = useState('Neutrální');

@@ -31,7 +31,7 @@ export const getHistory = async (): Promise<TrainingRecord[]> => {
 export const savePlan = async (record: TrainingRecord) => {
   const { error } = await supabase
     .from('training_history')
-    .insert([record]);
+    .upsert([record], { onConflict: 'date' });
 
   if (error) {
     console.error('Error saving plan:', error);
