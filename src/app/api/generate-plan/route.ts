@@ -58,9 +58,9 @@ DNESNÍ DATA:
 - Historie (posledních pár dní): ${JSON.stringify(history)}
 
 ROZHODOVACÍ STROM (Podle Recovery Score):
-- ČERVENÝ DEN (0-33% nebo Zánět nebo Velká únava): STRIKTNÍ ODPOČINEK. Maximálně lehký stretching.
-- ŽLUTÝ DEN (34-66%): AKTIVNÍ REGENERACE. Kolo nebo Mobilita. Zákaz běhu.
-- ZELENÝ DEN (67-100%): STIMULACE K RŮSTU. Progresivní běh nebo tvrdší trénink!
+- ČERVENÝ DEN (0-35% nebo Zánět nebo Velká únava): STRIKTNÍ ODPOČINEK. Ani stretching. Jen spánek a kvalitní strava. ZÁKAZ JAKÉKOLIV AKTIVITY.
+- ŽLUTÝ DEN (36-70%): LEHKÁ REGENERACE. Povolena pouze lehká procházka (max 30 min) nebo domácí protažení na podložce. PŘÍSNÝ ZÁKAZ BĚHU I KOLA.
+- ZELENÝ DEN (71-100%): TRÉNINK. Tělo je připraveno na zátěž. Můžeš zařadit Běh, Kolo nebo Cvičení, vždy ale zohledni, co sportovec dělal včera.
 
 VÝSTUP (Markdown, formátuj jako AI kouč):
 ### STATUS
