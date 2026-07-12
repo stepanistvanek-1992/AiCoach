@@ -13,6 +13,7 @@ export default function Home() {
   const [bodyBattery, setBodyBattery] = useState('80');
   const [sleep, setSleep] = useState('7.5');
   const [hrv, setHrv] = useState('45');
+  const [yesterdayActivity, setYesterdayActivity] = useState('Odpočinek / Nic');
   
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<{ text: string, score: number } | null>(null);
@@ -59,7 +60,8 @@ export default function Home() {
           rhr: parseInt(rhr) || 50,
           bodyBattery: parseInt(bodyBattery) || 80,
           sleep: parseFloat(sleep) || 8.0,
-          hrv: parseInt(hrv) || 45
+          hrv: parseInt(hrv) || 45,
+          yesterdayActivity
         })
       });
       const data = await res.json();
@@ -106,6 +108,18 @@ export default function Home() {
         <>
           {!plan && !loading && (
             <div className="glass-card animate-fade-in">
+              <div className="form-group">
+                <label htmlFor="yesterdayActivity">Co jsi včera reálně odtrénoval?</label>
+                <select id="yesterdayActivity" value={yesterdayActivity} onChange={(e) => setYesterdayActivity(e.target.value)}>
+                  <option value="Odpočinek / Nic">Odpočinek / Nic</option>
+                  <option value="Běh">Běh</option>
+                  <option value="Kolo">Kolo</option>
+                  <option value="Cvičení (Silový trénink)">Cvičení (Silový trénink)</option>
+                  <option value="Chůze">Chůze</option>
+                  <option value="Hike (Turistika)">Hike (Turistika)</option>
+                </select>
+              </div>
+
               <div className="form-group">
                 <label htmlFor="feeling">Jak se dnes ráno cítíš?</label>
                 <select id="feeling" value={feeling} onChange={(e) => setFeeling(e.target.value)}>

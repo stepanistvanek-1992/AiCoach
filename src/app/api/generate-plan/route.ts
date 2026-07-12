@@ -5,7 +5,7 @@ import { getHistory, savePlan } from '@/utils/supabase';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { feeling, rhr, bodyBattery, sleep, hrv } = body;
+    const { feeling, rhr, bodyBattery, sleep, hrv, yesterdayActivity } = body;
 
     const garminData = {
       rhr: rhr || 50,
@@ -50,6 +50,7 @@ FILOZOFIE:
 2. Progresivní rozvoj (Superkompenzace) pouze při Zelených dnech (Recovery > 66%).
 
 DNESNÍ DATA:
+- Včerejší reálná aktivita: ${yesterdayActivity}
 - Whoop Recovery Score: ${recoveryScore}%
 - RHR: ${garminData.rhr} bpm
 - Body Battery: ${garminData.bodyBattery}
@@ -102,7 +103,7 @@ VÝSTUP (Markdown, formátuj jako AI kouč):
       await savePlan({
         date: new Date().toISOString().split('T')[0],
         feeling: feeling,
-        activity: `Recovery: ${recoveryScore}% | RHR: ${garminData.rhr} | BB: ${garminData.bodyBattery} | Spánek: ${garminData.sleep}h | HRV: ${garminData.hrv}`,
+        activity: `[Včera: ${yesterdayActivity}] Recovery: ${recoveryScore}% | RHR: ${garminData.rhr} | BB: ${garminData.bodyBattery} | Spánek: ${garminData.sleep}h | HRV: ${garminData.hrv}`,
         ai_recommendation: planText
       });
     } catch (saveErr) {
