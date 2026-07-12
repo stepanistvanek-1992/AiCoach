@@ -140,7 +140,8 @@ export default function Home() {
                 <label htmlFor="feeling">Jak se dnes ráno cítíš?</label>
                 <select id="feeling" value={feeling} onChange={(e) => setFeeling(e.target.value)}>
                   <option value="Skvěle">Skvěle (100% regenerace)</option>
-                  <option value="Neutrální">Neutrální (Běžná únava)</option>
+                  <option value="Neutrální">Neutrální (Běžný stav)</option>
+                  <option value="Velká únava">Cítím velkou únavu / Vyčerpání</option>
                   <option value="Cítím zánět">Cítím zánět / Náběh na nemoc</option>
                 </select>
               </div>
