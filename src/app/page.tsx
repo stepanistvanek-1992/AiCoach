@@ -83,6 +83,9 @@ export default function Home() {
       const data = await res.json();
       if (data.plan) {
         setPlan({ text: data.plan, score: data.recoveryScore });
+        if (data.saveError) {
+          alert(`Plán se vygeneroval, ale uložení do databáze selhalo: ${data.saveError}`);
+        }
       } else {
         alert(data.error || 'Chyba při generování plánu.');
       }

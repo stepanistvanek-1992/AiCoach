@@ -97,6 +97,7 @@ VÝSTUP (Markdown, formátuj jako AI kouč):
     }
 
     // Save the newly generated plan to Supabase
+    let saveErrorStr = null;
     try {
       await savePlan({
         date: new Date().toISOString().split('T')[0],
@@ -104,11 +105,12 @@ VÝSTUP (Markdown, formátuj jako AI kouč):
         activity: `[Včera: ${yesterdayActivity}] Recovery: ${recoveryScore}% | RHR: ${garminData.rhr} | BB: ${garminData.bodyBattery} | Spánek: ${garminData.sleep}h`,
         ai_recommendation: planText
       });
-    } catch (saveErr) {
+    } catch (saveErr: any) {
       console.error("Uložení do historie selhalo:", saveErr);
+      saveErrorStr = saveErr.message || String(saveErr);
     }
 
-    return NextResponse.json({ plan: planText, recoveryScore });
+    return NextResponse.json({ plan: planText, recoveryScore, saveError: saveErrorStr });
   } catch (error: any) {
     console.error("API Route Error:", error);
     return NextResponse.json({ error: error.message || 'Failed to generate plan' }, { status: 500 });
