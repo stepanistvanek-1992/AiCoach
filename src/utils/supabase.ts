@@ -37,7 +37,7 @@ export const savePlan = async (record: TrainingRecord) => {
 
   if (fetchError) {
     console.error('Error fetching plan:', fetchError);
-    throw new Error('Failed to check existing plan.');
+    throw new Error(`Failed to check existing plan: ${fetchError.message || JSON.stringify(fetchError)}`);
   }
 
   if (existing && existing.length > 0) {
@@ -49,7 +49,7 @@ export const savePlan = async (record: TrainingRecord) => {
 
     if (updateError) {
       console.error('Error updating plan:', updateError);
-      throw new Error('Failed to update plan in database.');
+      throw new Error(`Failed to update plan: ${updateError.message || JSON.stringify(updateError)}`);
     }
   } else {
     // 3. Pokud neexistuje, vytvoříme nový
@@ -59,7 +59,7 @@ export const savePlan = async (record: TrainingRecord) => {
 
     if (insertError) {
       console.error('Error saving plan:', insertError);
-      throw new Error('Failed to save plan to database.');
+      throw new Error(`Failed to save plan: ${insertError.message || JSON.stringify(insertError)}`);
     }
   }
 };
