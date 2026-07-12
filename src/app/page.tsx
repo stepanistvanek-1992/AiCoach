@@ -11,8 +11,11 @@ export default function Home() {
   const [feeling, setFeeling] = useState('Neutrální');
   const [rhr, setRhr] = useState('50');
   const [bodyBattery, setBodyBattery] = useState('80');
+  const [sleep, setSleep] = useState('7.5');
+  const [hrv, setHrv] = useState('45');
+  
   const [loading, setLoading] = useState(false);
-  const [plan, setPlan] = useState<string | null>(null);
+  const [plan, setPlan] = useState<{ text: string, score: number } | null>(null);
 
   // Dashboard stavy
   const [history, setHistory] = useState<TrainingRecord[]>([]);
@@ -36,12 +39,10 @@ export default function Home() {
     setLoadingHistory(false);
   };
 
-  const getStatusClass = (planText: string) => {
-    if (!planText) return '';
-    if (planText.includes('Zelený')) return 'status-green';
-    if (planText.includes('Žlutý')) return 'status-yellow';
-    if (planText.includes('Červený') || planText.includes('Stopka')) return 'status-red';
-    return '';
+  const getRecoveryColor = (score: number) => {
+    if (score >= 67) return 'var(--accent-green)';
+    if (score >= 34) return 'var(--accent-yellow)';
+    return 'var(--accent-red)';
   };
 
   const handleGenerate = async () => {
@@ -56,12 +57,14 @@ export default function Home() {
         body: JSON.stringify({ 
           feeling,
           rhr: parseInt(rhr) || 50,
-          bodyBattery: parseInt(bodyBattery) || 80
+          bodyBattery: parseInt(bodyBattery) || 80,
+          sleep: parseFloat(sleep) || 8.0,
+          hrv: parseInt(hrv) || 45
         })
       });
       const data = await res.json();
       if (data.plan) {
-        setPlan(data.plan);
+        setPlan({ text: data.plan, score: data.recoveryScore });
       } else {
         alert(data.error || 'Chyba při generování plánu.');
       }
@@ -71,6 +74,11 @@ export default function Home() {
       setLoading(false);
     }
   };
+
+  // Vykreslení kruhu (SVG)
+  const radius = 90;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = plan ? circumference - (plan.score / 100) * circumference : circumference;
 
   return (
     <>
@@ -82,9 +90,9 @@ export default function Home() {
       <div className="tabs">
         <button 
           className={`tab-btn ${tab === 'checkin' ? 'active' : ''}`} 
-          onClick={() => setTab('checkin')}
+          onClick={() => { setTab('checkin'); setPlan(null); }}
         >
-          Dnešní plán
+          Dnešní Check-in
         </button>
         <button 
           className={`tab-btn ${tab === 'dashboard' ? 'active' : ''}`} 
@@ -100,47 +108,34 @@ export default function Home() {
             <div className="glass-card animate-fade-in">
               <div className="form-group">
                 <label htmlFor="feeling">Jak se dnes ráno cítíš?</label>
-                <select
-                  id="feeling"
-                  value={feeling}
-                  onChange={(e) => setFeeling(e.target.value)}
-                >
+                <select id="feeling" value={feeling} onChange={(e) => setFeeling(e.target.value)}>
                   <option value="Skvěle">Skvěle (100% regenerace)</option>
                   <option value="Neutrální">Neutrální (Běžná únava)</option>
                   <option value="Cítím zánět">Cítím zánět / Náběh na nemoc</option>
                 </select>
               </div>
 
-              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-                <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
-                  <label htmlFor="rhr">Klidová tepovka (RHR)</label>
-                  <input
-                    type="number"
-                    id="rhr"
-                    value={rhr}
-                    onChange={(e) => setRhr(e.target.value)}
-                    style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'white', fontSize: '1rem', outline: 'none' }}
-                  />
-                </div>
-                
-                <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
                   <label htmlFor="bodyBattery">Body Battery</label>
-                  <input
-                    type="number"
-                    id="bodyBattery"
-                    value={bodyBattery}
-                    onChange={(e) => setBodyBattery(e.target.value)}
-                    style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'white', fontSize: '1rem', outline: 'none' }}
-                  />
+                  <input type="number" id="bodyBattery" value={bodyBattery} onChange={(e) => setBodyBattery(e.target.value)} />
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label htmlFor="sleep">Spánek (h)</label>
+                  <input type="number" id="sleep" step="0.1" value={sleep} onChange={(e) => setSleep(e.target.value)} />
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label htmlFor="rhr">Klidovka (RHR)</label>
+                  <input type="number" id="rhr" value={rhr} onChange={(e) => setRhr(e.target.value)} />
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label htmlFor="hrv">HRV (ms)</label>
+                  <input type="number" id="hrv" value={hrv} onChange={(e) => setHrv(e.target.value)} />
                 </div>
               </div>
 
-              <button 
-                className="btn" 
-                onClick={handleGenerate}
-                disabled={loading}
-              >
-                Vygenerovat denní plán
+              <button className="btn" onClick={handleGenerate} disabled={loading}>
+                Analyzovat Recovery
               </button>
             </div>
           )}
@@ -148,24 +143,57 @@ export default function Home() {
           {loading && (
             <div className="loader animate-fade-in">
               <div className="spinner"></div>
-              <div>Analyzuji fyziologii a historii...</div>
+              <div>Kalkuluji Whoop Recovery & AI doporučení...</div>
             </div>
           )}
 
           {plan && !loading && (
-            <div className={`glass-card plan-content animate-fade-in ${getStatusClass(plan)}`}>
-              <ReactMarkdown>{plan}</ReactMarkdown>
-              
-              <button 
-                className="btn" 
-                style={{ marginTop: '2rem', background: 'rgba(255,255,255,0.1)', boxShadow: 'none' }}
-                onClick={() => {
-                  setPlan(null);
-                  setTab('dashboard'); // Pošleme ho rovnou do historie po zavření
-                }}
-              >
-                Zavřít a podívat se do historie
-              </button>
+            <div className="glass-card animate-fade-in">
+              {/* Whoop Recovery UI */}
+              <div className="recovery-container">
+                <div className="recovery-ring">
+                  <svg>
+                    <circle cx="100" cy="100" r={radius} className="ring-bg" />
+                    <circle 
+                      cx="100" 
+                      cy="100" 
+                      r={radius} 
+                      className="ring-progress" 
+                      style={{ 
+                        strokeDasharray: circumference, 
+                        strokeDashoffset: strokeDashoffset,
+                        stroke: getRecoveryColor(plan.score)
+                      }} 
+                    />
+                  </svg>
+                  <div className="ring-text">
+                    <h2 style={{ color: getRecoveryColor(plan.score) }}>{plan.score}%</h2>
+                    <p>Recovery</p>
+                  </div>
+                </div>
+
+                <div className="metrics-grid">
+                  <div className="metric-item">
+                    <div className="metric-value">{bodyBattery}</div>
+                    <div className="metric-label">B. Battery</div>
+                  </div>
+                  <div className="metric-item">
+                    <div className="metric-value">{sleep}h</div>
+                    <div className="metric-label">Spánek</div>
+                  </div>
+                  <div className="metric-item">
+                    <div className="metric-value">{hrv}</div>
+                    <div className="metric-label">HRV</div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', margin: '2rem 0' }}></div>
+
+              {/* AI Markdown Plan */}
+              <div className="plan-content">
+                <ReactMarkdown>{plan.text}</ReactMarkdown>
+              </div>
             </div>
           )}
         </>
@@ -176,29 +204,43 @@ export default function Home() {
           {loadingHistory ? (
             <div className="loader">
               <div className="spinner"></div>
-              <div>Načítám tvou historii...</div>
             </div>
           ) : history.length === 0 ? (
             <div className="glass-card" style={{ textAlign: 'center', opacity: 0.7 }}>
               <p>Zatím tu nemáš žádné záznamy.</p>
-              <p>Vygeneruj si svůj první dnešní plán!</p>
             </div>
           ) : (
-            history.map((record, index) => (
-              <div key={record.id || index} className={`glass-card plan-content ${getStatusClass(record.ai_recommendation)}`} style={{ marginBottom: '1rem', padding: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '0.5rem' }}>
-                  <strong style={{ fontSize: '1.1rem' }}>{new Date(record.date).toLocaleDateString('cs-CZ')}</strong>
-                  <span style={{ color: 'var(--text-secondary)' }}>{record.feeling}</span>
+            history.map((record, index) => {
+              // Pokusíme se vyčíst procento ze stringu "Recovery: XX% | ..."
+              const match = record.activity.match(/Recovery: (\d+)%/);
+              const score = match ? parseInt(match[1]) : 0;
+              const color = score > 0 ? getRecoveryColor(score) : 'var(--text-secondary)';
+
+              return (
+                <div key={record.id || index} className="glass-card plan-content" style={{ padding: '1.2rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <div>
+                      <strong style={{ fontSize: '1.1rem', display: 'block' }}>{new Date(record.date).toLocaleDateString('cs-CZ')}</strong>
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{record.feeling}</span>
+                    </div>
+                    {score > 0 && (
+                      <div style={{ background: 'rgba(0,0,0,0.3)', padding: '0.5rem 1rem', borderRadius: '20px', border: `1px solid ${color}` }}>
+                        <strong style={{ color: color, fontSize: '1.2rem' }}>{score}%</strong>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem', background: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: '8px' }}>
+                    {record.activity}
+                  </div>
+                  
+                  <div style={{ maxHeight: '100px', overflow: 'hidden', position: 'relative' }}>
+                    <ReactMarkdown>{record.ai_recommendation}</ReactMarkdown>
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40px', background: 'linear-gradient(transparent, rgba(15, 20, 25, 0.9))' }}></div>
+                  </div>
                 </div>
-                <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                  {record.activity}
-                </div>
-                <div style={{ maxHeight: '150px', overflow: 'hidden', position: 'relative' }}>
-                  <ReactMarkdown>{record.ai_recommendation}</ReactMarkdown>
-                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '50px', background: 'linear-gradient(transparent, var(--surface-color))' }}></div>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       )}

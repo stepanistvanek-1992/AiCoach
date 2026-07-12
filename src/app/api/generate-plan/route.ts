@@ -5,15 +5,21 @@ import { getHistory, savePlan } from '@/utils/supabase';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { feeling, rhr, bodyBattery } = body;
+    const { feeling, rhr, bodyBattery, sleep, hrv } = body;
 
     const garminData = {
       rhr: rhr || 50,
       bodyBattery: bodyBattery || 80,
-      stress: 20,
-      sleep: 8.0,
+      sleep: sleep || 8.0,
+      hrv: hrv || 45,
     };
     
+    // Whoop-like Recovery Calculation (0-100)
+    // Váhy: Body Battery (50%), Sleep (30%), RHR/HRV (20%)
+    let sleepScore = Math.min((garminData.sleep / 8) * 100, 100);
+    let recoveryScore = Math.round((garminData.bodyBattery * 0.5) + (sleepScore * 0.3) + (garminData.hrv > 40 ? 20 : 10));
+    if (recoveryScore > 100) recoveryScore = 100;
+
     // Fetch real history for context
     const history = await getHistory();
 
@@ -35,51 +41,75 @@ export async function POST(req: Request) {
     const ai = new GoogleGenAI({ apiKey });
     
     const prompt = `
-Jsi elitní sportovní fyziolog, osobní AI trenér a specialista na řízení tréninkové zátěže u sportovců s chronickými zánětlivými procesy. Tvojí úlohou je analyzovat ranní fyziologická data a navrhnout denní tréninkový plán na míru pro mobilní aplikaci.
+Jsi elitní sportovní fyziolog a osobní "Whoop Coach" pro sportovce s chronickými zánětlivými procesy.
+Analyzuj dnešní fyziologická data a navrhni denní plán.
 
-PROFIL KLIENTA: Muž, 183 cm, 80 kg. Cíle: Běh (2x týdně), Kolo (1x týdně), Cvičení. Trpí chronickým zánětem (flare-ups).
-
-TVÁ FILOZOFIE:
+PROFIL: Muž, 183 cm, 80 kg. Cíle: Běh (2x týdně), Kolo (1x týdně), Cvičení. Náchylný na záněty.
+FILOZOFIE:
 1. Ochrana imunity a prevence přetrénování.
-2. Progresivní rozvoj (Superkompenzace) pouze při Zelených dnech.
+2. Progresivní rozvoj (Superkompenzace) pouze při Zelených dnech (Recovery > 66%).
 
-VSTUPNÍ DATA DNES:
-- Garmin: RHR ${garminData.rhr}, Body Battery ${garminData.bodyBattery}, Stres ${garminData.stress}, Spánek ${garminData.sleep}h.
+DNESNÍ DATA:
+- Whoop Recovery Score: ${recoveryScore}%
+- RHR: ${garminData.rhr} bpm
+- Body Battery: ${garminData.bodyBattery}
+- Spánek: ${garminData.sleep}h
+- HRV: ${garminData.hrv} ms
 - Subjektivní pocit: ${feeling}
-- Historie posledních dní: ${JSON.stringify(history)}
+- Historie (posledních pár dní): ${JSON.stringify(history)}
 
-ROZHODOVACÍ STROM:
-FÁZE A: ČERVENÉ DNY (Zánět / Vysoké RHR / Nízké BB). STRIKTNÍ ODPOČINEK.
-FÁZE B: ŽLUTÉ DNY (Neutrálně / BB 40-75). AKTIVNÍ REGENERACE (Kolo/Mobilita), Zákaz běhu.
-FÁZE C: ZELENÉ DNY (Cítí se skvěle / BB > 75). STIMULACE K RŮSTU. Dnes klienta posouváš!
+ROZHODOVACÍ STROM (Podle Recovery Score):
+- ČERVENÝ DEN (0-33% nebo Zánět): STRIKTNÍ ODPOČINEK. Maximálně lehký stretching.
+- ŽLUTÝ DEN (34-66%): AKTIVNÍ REGENERACE. Kolo nebo Mobilita. Zákaz běhu.
+- ZELENÝ DEN (67-100%): STIMULACE K RŮSTU. Progresivní běh nebo tvrdší trénink!
 
-VÝSTUPNÍ FORMÁT (dodržuj striktně markdown strukturu přesně podle těchto nadpisů):
+VÝSTUP (Markdown, formátuj jako AI kouč):
 ### STATUS
 ### DOPORUČENÍ
 ### TRÉNINKOVÝ PLÁN
 ### FOCUS & VAROVÁNÍ
 `;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: prompt,
-    });
-    const planText = response.text || '';
+    const modelsToTry = ['gemini-3.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
+    let planText = '';
+    
+    for (const modelName of modelsToTry) {
+      try {
+        console.log(`Trying model: ${modelName}`);
+        const response = await ai.models.generateContent({
+          model: modelName,
+          contents: prompt,
+        });
+        if (response.text) {
+          planText = response.text;
+          break; // Úspěšně vygenerováno
+        }
+      } catch (e: any) {
+        console.warn(`Model ${modelName} failed:`, e.message);
+        // Pokud je to poslední model v poli, vyhodíme chybu
+        if (modelName === modelsToTry[modelsToTry.length - 1]) {
+          throw e;
+        }
+      }
+    }
+
+    if (!planText) {
+      throw new Error("Nepodařilo se vygenerovat plán ze žádného dostupného modelu.");
+    }
 
     // Save the newly generated plan to Supabase
     try {
       await savePlan({
         date: new Date().toISOString().split('T')[0],
         feeling: feeling,
-        activity: `RHR: ${garminData.rhr}, BB: ${garminData.bodyBattery}`,
+        activity: `Recovery: ${recoveryScore}% | RHR: ${garminData.rhr} | BB: ${garminData.bodyBattery} | Spánek: ${garminData.sleep}h | HRV: ${garminData.hrv}`,
         ai_recommendation: planText
       });
     } catch (saveErr) {
       console.error("Uložení do historie selhalo:", saveErr);
-      // We don't throw here so the user still gets the plan even if save fails
     }
 
-    return NextResponse.json({ plan: planText });
+    return NextResponse.json({ plan: planText, recoveryScore });
   } catch (error: any) {
     console.error("API Route Error:", error);
     return NextResponse.json({ error: error.message || 'Failed to generate plan' }, { status: 500 });
