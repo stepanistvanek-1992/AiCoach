@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { supabase, TrainingRecord } from '@/utils/supabase';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
 
 export default function Home() {
   const [tab, setTab] = useState<'checkin' | 'dashboard'>('checkin');
@@ -38,6 +39,24 @@ export default function Home() {
     
     if (data) setHistory(data);
     setLoadingHistory(false);
+  };
+
+  const parseChartData = () => {
+    return history.map(r => {
+      let recovery = 0, rhr = 0, bb = 0, sleep = 0, hrv = 0;
+      
+      const recMatch = r.activity.match(/Recovery: (\d+)%/);
+      if(recMatch) recovery = parseInt(recMatch[1]);
+      
+      const rhrMatch = r.activity.match(/RHR: (\d+)/);
+      if(rhrMatch) rhr = parseInt(rhrMatch[1]);
+      
+      const hrvMatch = r.activity.match(/HRV: (\d+)/);
+      if(hrvMatch) hrv = parseInt(hrvMatch[1]);
+      
+      const dateStr = new Date(r.date).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' });
+      return { date: dateStr, recovery, rhr, hrv };
+    }).reverse(); // Pro graf chceme nejstarší zleva doprava
   };
 
   const getRecoveryColor = (score: number) => {
@@ -224,37 +243,74 @@ export default function Home() {
               <p>Zatím tu nemáš žádné záznamy.</p>
             </div>
           ) : (
-            history.map((record, index) => {
-              // Pokusíme se vyčíst procento ze stringu "Recovery: XX% | ..."
-              const match = record.activity.match(/Recovery: (\d+)%/);
-              const score = match ? parseInt(match[1]) : 0;
-              const color = score > 0 ? getRecoveryColor(score) : 'var(--text-secondary)';
-
-              return (
-                <div key={record.id || index} className="glass-card plan-content" style={{ padding: '1.2rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <div>
-                      <strong style={{ fontSize: '1.1rem', display: 'block' }}>{new Date(record.date).toLocaleDateString('cs-CZ')}</strong>
-                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{record.feeling}</span>
-                    </div>
-                    {score > 0 && (
-                      <div style={{ background: 'rgba(0,0,0,0.3)', padding: '0.5rem 1rem', borderRadius: '20px', border: `1px solid ${color}` }}>
-                        <strong style={{ color: color, fontSize: '1.2rem' }}>{score}%</strong>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem', background: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: '8px' }}>
-                    {record.activity}
-                  </div>
-                  
-                  <div style={{ maxHeight: '100px', overflow: 'hidden', position: 'relative' }}>
-                    <ReactMarkdown>{record.ai_recommendation}</ReactMarkdown>
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40px', background: 'linear-gradient(transparent, rgba(15, 20, 25, 0.9))' }}></div>
-                  </div>
+            <>
+              {/* CHARTS SECTION */}
+              <div className="glass-card" style={{ padding: '1rem', marginBottom: '2rem' }}>
+                <h3 style={{ color: 'var(--text-secondary)', marginBottom: '1rem', textAlign: 'center' }}>Trend Regenerace (%)</h3>
+                <div style={{ width: '100%', height: 200 }}>
+                  <ResponsiveContainer>
+                    <LineChart data={parseChartData()} margin={{ top: 5, right: 5, left: -25, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                      <XAxis dataKey="date" stroke="rgba(255,255,255,0.5)" fontSize={12} tickMargin={10} />
+                      <YAxis stroke="rgba(255,255,255,0.5)" fontSize={12} domain={[0, 100]} />
+                      <Tooltip contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: 'none', borderRadius: '8px', color: 'white' }} />
+                      <Line type="monotone" dataKey="recovery" stroke="var(--accent-green)" strokeWidth={3} dot={{ r: 4, fill: "var(--accent-green)" }} />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </div>
-              );
-            })
+              </div>
+
+              <div className="glass-card" style={{ padding: '1rem', marginBottom: '2rem' }}>
+                <h3 style={{ color: 'var(--text-secondary)', marginBottom: '1rem', textAlign: 'center' }}>Zdravotní Metriky (HRV & RHR)</h3>
+                <div style={{ width: '100%', height: 200 }}>
+                  <ResponsiveContainer>
+                    <LineChart data={parseChartData()} margin={{ top: 5, right: 5, left: -25, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                      <XAxis dataKey="date" stroke="rgba(255,255,255,0.5)" fontSize={12} tickMargin={10} />
+                      <YAxis yAxisId="left" stroke="rgba(255,255,255,0.5)" fontSize={12} domain={['dataMin - 5', 'dataMax + 5']} />
+                      <YAxis yAxisId="right" orientation="right" stroke="rgba(255,255,255,0.5)" fontSize={12} domain={['dataMin - 2', 'dataMax + 2']} />
+                      <Tooltip contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: 'none', borderRadius: '8px', color: 'white' }} />
+                      <Legend wrapperStyle={{ fontSize: '12px' }} />
+                      <Line yAxisId="left" type="monotone" name="HRV (ms)" dataKey="hrv" stroke="var(--accent-blue)" strokeWidth={2} dot={{ r: 3 }} />
+                      <Line yAxisId="right" type="monotone" name="RHR (bpm)" dataKey="rhr" stroke="var(--accent-red)" strokeWidth={2} dot={{ r: 3 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <h3 style={{ color: 'white', marginBottom: '1rem', marginLeft: '0.5rem' }}>Deník tréninků</h3>
+
+              {history.map((record, index) => {
+                const match = record.activity.match(/Recovery: (\d+)%/);
+                const score = match ? parseInt(match[1]) : 0;
+                const color = score > 0 ? getRecoveryColor(score) : 'var(--text-secondary)';
+
+                return (
+                  <div key={record.id || index} className="glass-card plan-content" style={{ padding: '1.2rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                      <div>
+                        <strong style={{ fontSize: '1.1rem', display: 'block' }}>{new Date(record.date).toLocaleDateString('cs-CZ')}</strong>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{record.feeling}</span>
+                      </div>
+                      {score > 0 && (
+                        <div style={{ background: 'rgba(0,0,0,0.3)', padding: '0.5rem 1rem', borderRadius: '20px', border: `1px solid ${color}` }}>
+                          <strong style={{ color: color, fontSize: '1.2rem' }}>{score}%</strong>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem', background: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: '8px' }}>
+                      {record.activity}
+                    </div>
+                    
+                    <div style={{ maxHeight: '100px', overflow: 'hidden', position: 'relative' }}>
+                      <ReactMarkdown>{record.ai_recommendation}</ReactMarkdown>
+                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40px', background: 'linear-gradient(transparent, rgba(15, 20, 25, 0.9))' }}></div>
+                    </div>
+                  </div>
+                );
+              })}
+            </>
           )}
         </div>
       )}
