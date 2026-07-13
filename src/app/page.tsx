@@ -21,6 +21,12 @@ export default function Home() {
   // Dashboard stavy
   const [history, setHistory] = useState<TrainingRecord[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [expandedIds, setExpandedIds] = useState<string[]>([]);
+
+  const toggleExpand = (id: string | undefined) => {
+    if (!id) return;
+    setExpandedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
 
   useEffect(() => {
     if (tab === 'dashboard') {
@@ -320,10 +326,34 @@ export default function Home() {
                       {record.activity}
                     </div>
                     
-                    <div style={{ maxHeight: '100px', overflow: 'hidden', position: 'relative' }}>
+                    <div style={{ 
+                      maxHeight: expandedIds.includes(record.id || '') ? 'none' : '100px', 
+                      overflow: 'hidden', 
+                      position: 'relative' 
+                    }}>
                       <ReactMarkdown>{record.ai_recommendation}</ReactMarkdown>
-                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40px', background: 'linear-gradient(transparent, rgba(15, 20, 25, 0.9))' }}></div>
+                      {!expandedIds.includes(record.id || '') && (
+                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40px', background: 'linear-gradient(transparent, rgba(15, 20, 25, 0.9))' }}></div>
+                      )}
                     </div>
+                    <button 
+                      onClick={() => toggleExpand(record.id)}
+                      style={{ 
+                        background: 'rgba(255,255,255,0.05)', 
+                        color: 'var(--text-secondary)', 
+                        border: '1px solid rgba(255,255,255,0.1)', 
+                        padding: '0.5rem 1rem', 
+                        borderRadius: '8px', 
+                        cursor: 'pointer', 
+                        marginTop: '1rem', 
+                        width: '100%',
+                        transition: 'all 0.2s ease',
+                        fontFamily: 'inherit',
+                        fontSize: '0.9rem'
+                      }}
+                    >
+                      {expandedIds.includes(record.id || '') ? 'Skrýt detail' : 'Zobrazit celý plán'}
+                    </button>
                   </div>
                 );
               })}
