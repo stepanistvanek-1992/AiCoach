@@ -135,8 +135,7 @@ export default function Home() {
   return (
     <>
       <header className="header">
-        <h1>Anti-Inflammatory Coach</h1>
-        <p>WHOOP Metodologie • Péče o zánět • Nespěchej</p>
+        <h1>AI Coach</h1>
       </header>
 
       <div className="tabs">
@@ -197,7 +196,7 @@ export default function Home() {
               </div>
 
               <button className="btn" onClick={handleGenerate} disabled={loading}>
-                Vyhodnotit Zánět & 3 Pilíře WHOOP
+                Spočítat Recovery
               </button>
             </div>
           )}
