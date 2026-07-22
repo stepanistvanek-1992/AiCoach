@@ -158,21 +158,21 @@ export default function Home() {
           {!plan && !loading && (
             <div className="glass-card animate-fade-in">
               <div className="form-group">
-                <label htmlFor="feeling">Jak se dnes ráno cítíš? (Příznaky zánětu)</label>
+                <label htmlFor="feeling">Jak se dnes cítíš? (Zánět)</label>
                 <select id="feeling" value={feeling} onChange={(e) => setFeeling(e.target.value)}>
-                  <option value="Skvěle (Bez příznaků)">Skvěle (Bez zánětu & plný energie)</option>
-                  <option value="Neutrální (Běžný provoz)">Neutrální (Běžný provoz, bez bolesti)</option>
-                  <option value="Mírná únava / Tuhost kloubů">Mírná únava / Tuhost kloubů</option>
-                  <option value="Cítím zánět / Vzplanutí zánětu">Cítím zánět / Vzplanutí zánětu & bolest</option>
-                  <option value="Vyčerpání / Náběh na nemoc">Vyčerpání / Náběh na nemoc</option>
+                  <option value="Skvěle (Bez zánětu)">Skvěle (Bez zánětu & energie)</option>
+                  <option value="Neutrální (Bez bolesti)">Neutrální (Bez bolesti)</option>
+                  <option value="Mírná únava / Tuhost">Mírná únava / Tuhost kloubů</option>
+                  <option value="Cítím zánět / Bolest">Cítím zánět / Bolest kloubů</option>
+                  <option value="Vyčerpání / Nemoc">Vyčerpání / Náběh na nemoc</option>
                 </select>
               </div>
 
               <div className="form-group">
-                <label htmlFor="yesterdayActivity">Včerejší aktivita / Zátěž</label>
+                <label htmlFor="yesterdayActivity">Včerejší aktivita</label>
                 <select id="yesterdayActivity" value={yesterdayActivity} onChange={(e) => setYesterdayActivity(e.target.value)}>
                   <option value="Odpočinek / Volno">Odpočinek / Volno</option>
-                  <option value="Kolo">Kolo (Jízda na kole)</option>
+                  <option value="Kolo">Jízda na kole</option>
                   <option value="Běh">Běh</option>
                   <option value="Chůze / Hike">Chůze / Hike (Turistika)</option>
                   <option value="Lehké protažení / Mobilita">Lehké protažení / Mobilita</option>
@@ -180,19 +180,20 @@ export default function Home() {
                 </select>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.2rem', alignItems: 'start' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label htmlFor="bodyBattery">HRV / Body Battery</label>
+                  <label htmlFor="bodyBattery">Body Battery / HRV</label>
                   <input type="number" id="bodyBattery" value={bodyBattery} onChange={(e) => setBodyBattery(e.target.value)} placeholder="0-100" />
                 </div>
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label htmlFor="sleep">Spánek minulou noc (h)</label>
+                  <label htmlFor="sleep">Spánek (hodin)</label>
                   <input type="number" id="sleep" step="0.1" value={sleep} onChange={(e) => setSleep(e.target.value)} />
                 </div>
-                <div className="form-group" style={{ marginBottom: 0, gridColumn: 'span 2' }}>
-                  <label htmlFor="rhr">Klidová tepová frekvence (RHR - bpm)</label>
-                  <input type="number" id="rhr" value={rhr} onChange={(e) => setRhr(e.target.value)} />
-                </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="rhr">Klidový tep (RHR - bpm)</label>
+                <input type="number" id="rhr" value={rhr} onChange={(e) => setRhr(e.target.value)} />
               </div>
 
               <button className="btn" onClick={handleGenerate} disabled={loading}>
