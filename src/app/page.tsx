@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import type { TrainingRecord } from '@/utils/supabase';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function Home() {
-  const [tab, setTab] = useState<'checkin' | 'dashboard'>('dashboard');
+  const [tab, setTab] = useState<'checkin' | 'dashboard'>('checkin');
   
   // Check-in stavy
   const [feeling, setFeeling] = useState('Neutrální');
@@ -16,7 +16,7 @@ export default function Home() {
   const [yesterdayActivity, setYesterdayActivity] = useState('Odpočinek / Nic');
   
   const [loading, setLoading] = useState(false);
-  const [plan, setPlan] = useState<{ text: string, score: number } | null>(null);
+  const [plan, setPlan] = useState<{ text: string, score: number, targetStrain: number, sleepNeed: number } | null>(null);
 
   // Dashboard stavy
   const [history, setHistory] = useState<TrainingRecord[]>([]);
@@ -70,7 +70,7 @@ export default function Home() {
 
   const parseChartData = () => {
     return history.map(r => {
-      let recovery = 0, rhr = 0, bb = 0, sleep = 0;
+      let recovery = 0, rhr = 0;
       
       const recMatch = r.activity.match(/Recovery: (\d+)%/);
       if(recMatch) recovery = parseInt(recMatch[1]);
@@ -80,7 +80,7 @@ export default function Home() {
       
       const dateStr = new Date(r.date).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' });
       return { date: dateStr, recovery, rhr };
-    }).reverse(); // Pro graf chceme nejstarší zleva doprava
+    }).reverse();
   };
 
   const getRecoveryColor = (score: number) => {
@@ -108,12 +108,17 @@ export default function Home() {
       });
       const data = await res.json();
       if (data.plan) {
-        setPlan({ text: data.plan, score: data.recoveryScore });
+        setPlan({ 
+          text: data.plan, 
+          score: data.recoveryScore,
+          targetStrain: data.targetStrain || 8.0,
+          sleepNeed: data.sleepNeed || 8.0
+        });
         if (data.saveError) {
-          alert(`Plán se vygeneroval, ale uložení do databáze selhalo: ${data.saveError}`);
+          alert(`Doporučení bylo vygenerováno, ale uložení do databáze selhalo: ${data.saveError}`);
         }
       } else {
-        alert(data.error || 'Chyba při generování plánu.');
+        alert(data.error || 'Chyba při generování doporučení.');
       }
     } catch (err: any) {
       alert(err.message || 'Došlo k chybě připojení.');
@@ -122,16 +127,16 @@ export default function Home() {
     }
   };
 
-  // Vykreslení kruhu (SVG)
-  const radius = 90;
+  // SVG Kruh pro Recovery
+  const radius = 80;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = plan ? circumference - (plan.score / 100) * circumference : circumference;
 
   return (
     <>
       <header className="header">
-        <h1>AI Coach</h1>
-        <p>Optimalizace zátěže & ochrana imunity</p>
+        <h1>Anti-Inflammatory Coach</h1>
+        <p>WHOOP Metodologie • Péče o zánět • Nespěchej</p>
       </header>
 
       <div className="tabs">
@@ -145,7 +150,7 @@ export default function Home() {
           className={`tab-btn ${tab === 'dashboard' ? 'active' : ''}`} 
           onClick={() => setTab('dashboard')}
         >
-          Historie
+          Deník & Trendy
         </button>
       </div>
 
@@ -154,44 +159,45 @@ export default function Home() {
           {!plan && !loading && (
             <div className="glass-card animate-fade-in">
               <div className="form-group">
-                <label htmlFor="yesterdayActivity">Co jsi včera reálně odtrénoval?</label>
-                <select id="yesterdayActivity" value={yesterdayActivity} onChange={(e) => setYesterdayActivity(e.target.value)}>
-                  <option value="Odpočinek / Nic">Odpočinek / Nic</option>
-                  <option value="Běh">Běh</option>
-                  <option value="Kolo">Kolo</option>
-                  <option value="Cvičení (Silový trénink)">Cvičení (Silový trénink)</option>
-                  <option value="Chůze">Chůze</option>
-                  <option value="Hike (Turistika)">Hike (Turistika)</option>
+                <label htmlFor="feeling">Jak se dnes ráno cítíš? (Příznaky zánětu)</label>
+                <select id="feeling" value={feeling} onChange={(e) => setFeeling(e.target.value)}>
+                  <option value="Skvěle (Bez příznaků)">Skvěle (Bez zánětu & plný energie)</option>
+                  <option value="Neutrální (Běžný provoz)">Neutrální (Běžný provoz, bez bolesti)</option>
+                  <option value="Mírná únava / Tuhost kloubů">Mírná únava / Tuhost kloubů</option>
+                  <option value="Cítím zánět / Vzplanutí zánětu">Cítím zánět / Vzplanutí zánětu & bolest</option>
+                  <option value="Vyčerpání / Náběh na nemoc">Vyčerpání / Náběh na nemoc</option>
                 </select>
               </div>
 
               <div className="form-group">
-                <label htmlFor="feeling">Jak se dnes ráno cítíš?</label>
-                <select id="feeling" value={feeling} onChange={(e) => setFeeling(e.target.value)}>
-                  <option value="Skvěle">Skvěle (100% regenerace)</option>
-                  <option value="Neutrální">Neutrální (Běžný stav)</option>
-                  <option value="Velká únava">Cítím velkou únavu / Vyčerpání</option>
-                  <option value="Cítím zánět">Cítím zánět / Náběh na nemoc</option>
+                <label htmlFor="yesterdayActivity">Včerejší aktivita / Zátěž</label>
+                <select id="yesterdayActivity" value={yesterdayActivity} onChange={(e) => setYesterdayActivity(e.target.value)}>
+                  <option value="Odpočinek / Regenerace">Odpočinek / Regenerace</option>
+                  <option value="Lehká procházka / Mobilita">Lehká procházka / Mobilita</option>
+                  <option value="Běh">Běh</option>
+                  <option value="Kolo">Jízda na kole</option>
+                  <option value="Cvičení / Posilovna">Cvičení / Posilovna</option>
+                  <option value="Náročný den / Stres">Náročný fyzický/psychický den</option>
                 </select>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label htmlFor="bodyBattery">Body Battery</label>
-                  <input type="number" id="bodyBattery" value={bodyBattery} onChange={(e) => setBodyBattery(e.target.value)} />
+                  <label htmlFor="bodyBattery">HRV / Body Battery</label>
+                  <input type="number" id="bodyBattery" value={bodyBattery} onChange={(e) => setBodyBattery(e.target.value)} placeholder="0-100" />
                 </div>
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label htmlFor="sleep">Spánek (h)</label>
+                  <label htmlFor="sleep">Spánek minulou noc (h)</label>
                   <input type="number" id="sleep" step="0.1" value={sleep} onChange={(e) => setSleep(e.target.value)} />
                 </div>
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label htmlFor="rhr">Klidovka (RHR)</label>
+                <div className="form-group" style={{ marginBottom: 0, gridColumn: 'span 2' }}>
+                  <label htmlFor="rhr">Klidová tepová frekvence (RHR - bpm)</label>
                   <input type="number" id="rhr" value={rhr} onChange={(e) => setRhr(e.target.value)} />
                 </div>
               </div>
 
               <button className="btn" onClick={handleGenerate} disabled={loading}>
-                Analyzovat Recovery
+                Vyhodnotit Zánět & 3 Pilíře WHOOP
               </button>
             </div>
           )}
@@ -199,20 +205,24 @@ export default function Home() {
           {loading && (
             <div className="loader animate-fade-in">
               <div className="spinner"></div>
-              <div>Kalkuluji Recovery & AI doporučení...</div>
+              <div>Analýza imunity, zánětu a WHOOP metrik...</div>
             </div>
           )}
 
           {plan && !loading && (
             <div className="glass-card animate-fade-in">
-              {/* Whoop Recovery UI */}
-              <div className="recovery-container">
-                <div className="recovery-ring">
+              {/* WHOOP 3-PILLARS VISUAL OVERVIEW */}
+              <div className="recovery-container" style={{ paddingBottom: '1rem' }}>
+                <div className={`inflammation-tag ${plan.score >= 67 ? 'healthy' : ''}`}>
+                  {plan.score < 34 ? '⚠️ Riziko zánětu – Šetři tělo' : plan.score < 67 ? '🟡 Udržovací režim – Volný tempo' : '🟢 Výborná imunita – Plná regenerace'}
+                </div>
+
+                <div className="recovery-ring" style={{ width: '180px', height: '180px' }}>
                   <svg>
-                    <circle cx="100" cy="100" r={radius} className="ring-bg" />
+                    <circle cx="90" cy="90" r={radius} className="ring-bg" />
                     <circle 
-                      cx="100" 
-                      cy="100" 
+                      cx="90" 
+                      cy="90" 
                       r={radius} 
                       className="ring-progress" 
                       style={{ 
@@ -223,29 +233,59 @@ export default function Home() {
                     />
                   </svg>
                   <div className="ring-text">
-                    <h2 style={{ color: getRecoveryColor(plan.score) }}>{plan.score}%</h2>
-                    <p>Recovery</p>
+                    <h2 style={{ color: getRecoveryColor(plan.score), fontSize: '2.5rem' }}>{plan.score}%</h2>
+                    <p style={{ fontSize: '0.85rem' }}>Recovery</p>
                   </div>
                 </div>
 
-                <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
-                  <div className="metric-item">
-                    <div className="metric-value">{bodyBattery}</div>
-                    <div className="metric-label">B. Battery</div>
+                {/* 3 WHOOP PILLARS GRID */}
+                <div className="pillars-grid">
+                  <div className="pillar-card recovery">
+                    <div className="pillar-title">1. Regenerace</div>
+                    <div className="pillar-value" style={{ color: getRecoveryColor(plan.score) }}>{plan.score}%</div>
+                    <div className="pillar-subtitle">RHR: {rhr} bpm</div>
                   </div>
-                  <div className="metric-item">
-                    <div className="metric-value">{sleep}h</div>
-                    <div className="metric-label">Spánek</div>
+
+                  <div className="pillar-card strain">
+                    <div className="pillar-title">2. Cílová Zátěž</div>
+                    <div className="pillar-value" style={{ color: 'var(--accent-cyan)' }}>{plan.targetStrain}</div>
+                    <div className="pillar-subtitle">Ze škály 0–21</div>
+                    <div className="strain-bar-bg">
+                      <div className="strain-bar-fill" style={{ width: `${(plan.targetStrain / 21) * 100}%` }}></div>
+                    </div>
+                  </div>
+
+                  <div className="pillar-card sleep">
+                    <div className="pillar-title">3. Spánek Dnes</div>
+                    <div className="pillar-value" style={{ color: 'var(--accent-blue)' }}>{plan.sleepNeed}h</div>
+                    <div className="pillar-subtitle">Cílový odpočinek</div>
                   </div>
                 </div>
               </div>
 
-              <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', margin: '2rem 0' }}></div>
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', margin: '1.5rem 0' }}></div>
 
-              {/* AI Markdown Plan */}
+              {/* AI Markdown Plan Content */}
               <div className="plan-content">
                 <ReactMarkdown>{plan.text}</ReactMarkdown>
               </div>
+
+              <button 
+                onClick={() => setPlan(null)} 
+                style={{ 
+                  background: 'rgba(255,255,255,0.05)', 
+                  border: '1px solid rgba(255,255,255,0.1)', 
+                  color: 'white', 
+                  width: '100%', 
+                  padding: '0.8rem', 
+                  borderRadius: '12px', 
+                  marginTop: '1.5rem', 
+                  cursor: 'pointer',
+                  fontWeight: 600
+                }}
+              >
+                ← Nový Check-in
+              </button>
             </div>
           )}
         </>
