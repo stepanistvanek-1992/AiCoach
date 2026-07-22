@@ -172,12 +172,12 @@ export default function Home() {
               <div className="form-group">
                 <label htmlFor="yesterdayActivity">Včerejší aktivita / Zátěž</label>
                 <select id="yesterdayActivity" value={yesterdayActivity} onChange={(e) => setYesterdayActivity(e.target.value)}>
-                  <option value="Odpočinek / Regenerace">Odpočinek / Regenerace</option>
-                  <option value="Lehká procházka / Mobilita">Lehká procházka / Mobilita</option>
+                  <option value="Odpočinek / Volno">Odpočinek / Volno</option>
+                  <option value="Kolo">Kolo (Jízda na kole)</option>
                   <option value="Běh">Běh</option>
-                  <option value="Kolo">Jízda na kole</option>
-                  <option value="Cvičení / Posilovna">Cvičení / Posilovna</option>
-                  <option value="Náročný den / Stres">Náročný fyzický/psychický den</option>
+                  <option value="Chůze / Hike">Chůze / Hike (Turistika)</option>
+                  <option value="Lehké protažení / Mobilita">Lehké protažení / Mobilita</option>
+                  <option value="Náročný den / Stres">Náročný den / Stres</option>
                 </select>
               </div>
 
