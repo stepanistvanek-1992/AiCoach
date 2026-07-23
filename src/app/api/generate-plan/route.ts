@@ -94,54 +94,60 @@ export async function POST(req: Request) {
 
     if (recoveryTimeHours > 72) recoveryTimeHours = 72;
 
+    // Helper function for rule-based anti-inflammatory recommendation
+    const getFallbackPlan = () => {
+      if (recoveryScore < 34 || feelingPenalty >= 35) {
+        return `### 🌿 Zhodnocení stavu zánětu a regenerace
+Tělo dnes signalizuje zvýšené zánětlivé zatížení a únavu. Vaše regenerace je na **${recoveryScore}%** a Připravenost k tréninku je **${trainingReadiness}% (${readinessLabel})**. Do plné regenerace zbývá přibližně **${recoveryTimeHours} hodin**. Imunita potřebuje veškerou energii pro hojení tkání. Není kam spěchat – nespěchej a dej tělu čas.
+
+### 🎯 Doporučená zátěž (Strain Target: ${targetStrain} / 21)
+Dnes vynechejte náročný trénink, běh i rychlou jízdu na kole. Najděte si čas na **striktní odpočinek** nebo jen velmi lehkou procházku na čerstvém vzduchu (max 15–20 minut bez pocení) či jemné protažení.
+
+### 🛡️ Protizánětlivá péče & Výživa
+* **Bylinkový čaj:** Připravte si teplý kurkumový nebo zázvorový čaj s citrónem.
+* **Hydratace & Strava:** Doplňte dostatek čisté vody a vyvarujte se průmyslově zpracovaným cukrům.
+* **Relaxace:** Dopřejte si 10 minut vědomého pomalého dýchání a teplo.
+
+### 😴 Spánková potřeba pro dnešní noc (${sleepNeed}h)
+Protože tělo bojuje se zánětem, vaší spánkovou potřebou pro dnešek je **${sleepNeed} hodin**. Zkuste jít spát o 45 minut dříve.`;
+      } else if (recoveryScore < 67) {
+        return `### 🌿 Zhodnocení stavu zánětu a regenerace
+Vaše regenerace je na **${recoveryScore}%** (Žlutá zóna) a Připravenost k tréninku je **${trainingReadiness}% (${readinessLabel})**. Doba do plné regenerace je odhadována na **${recoveryTimeHours}h**. Tělo je ve stabilním udržovacím stavu bez akutního zánětlivého vzplanutí.
+
+### 🎯 Doporučená zátěž (Strain Target: ${targetStrain} / 21)
+Dnes je skvělý den pro **aktivní regeneraci**. Můžete zařadit pohodovou procházku, nenáročné protažení na podložce nebo volnou jízdu na kole bez vysoké tepovky. Vyhněte se vyčerpání.
+
+### 🛡️ Protizánětlivá péče & Výživa
+* **Omega-3 & Zdravé tuky:** Zařaďte do jídelníčku hrst vlašských ořechů, lněná semínka nebo rybu.
+* **Jemná mobilita:** 15 minut uvolnění pomůže lymfatickému systému odvádět toxiny.
+
+### 😴 Spánková potřeba pro dnešní noc (${sleepNeed}h)
+Doporučená délka spánku pro dnešní noc je **${sleepNeed} hodin**. Udržujte pravidelný spánkový režim.`;
+      } else {
+        return `### 🌿 Zhodnocení stavu zánětu a regenerace
+Skvělá zpráva! Vaše tělo je plně regenerované (Recovery **${recoveryScore}%**), Připravenost k tréninku je **${trainingReadiness}% (${readinessLabel})** a Doba regenerace je **${recoveryTimeHours}h**. Zánětlivé markery jsou pod kontrolou.
+
+### 🎯 Doporučená zátěž (Strain Target: ${targetStrain} / 21)
+Dnes má tělo zelenou pro **plnohodnotný pohyb** (běh, jízdu na kole nebo delší hike). Stále si všímejte signálů těla a udržujte stabilní tempo.
+
+### 🛡️ Protizánětlivá péče & Výživa
+* **Kvalitní doplňování paliva:** Po aktivním pohybu doplňte kvalitní sacharidy a bílkoviny pro obnovu tkání.
+* **Hořčík:** Večer zařaďte hořčík (bisglycinát) pro podporu svalové relaxace a kvalitního REM spánku.
+
+### 😴 Spánková potřeba pro dnešní noc (${sleepNeed}h)
+Cílový spánek pro regeneraci je **${sleepNeed} hodin**.`;
+      }
+    };
+
     // Fetch real history for context
     const history = await getHistory();
 
     const apiKey = process.env.GEMINI_API_KEY || 'mock-key-for-dev';
     
-    // Pro vývoj bez API klíče vracíme lidský, protizánětlivý mock
+    // Pokud je klíč vývojový mock, vrátíme pravidlový plán
     if (apiKey === 'mock-key-for-dev') {
-      let mockResponse = '';
-      if (recoveryScore < 34 || feelingPenalty >= 35) {
-        mockResponse = `### 🌿 Zhodnocení stavu zánětu a regenerace\nTělo dnes signalizuje zvýšené zánětlivé zatížení a únavu. Vaše regenerace je na **${recoveryScore}%** a Připravenost k tréninku je **${trainingReadiness}% (${readinessLabel})**. Do plné regenerace zbývá přibližně **${recoveryTimeHours} hodin**. Není kam spěchat – nespěchej a dej tělu čas.
-
-### 🎯 Doporučená zátěž (Strain Target: ${targetStrain} / 21)
-Dnes vynechejte jakékoliv náročné tréninky, běh i jízdu na kole. Ideální je **striktní odpočinek** nebo jen velmi lehká procházka na čerstvém vzduchu (max 15-20 minut pohodovým krokem bez pocení).
-
-### 🛡️ Protizánětlivá péče & Výživa
-* **Bylinkový čaj:** Připravte si teplý kurkumový nebo zázvorový čaj s citrónem.
-* **Hydratace & Strava:** Doplňte dostatek čisté vody a vyhněte se průmyslově zpracovaným cukrům, které podporují zánět.
-* **Relaxace:** Dopřejte si 10 minut vědomého dýchání nebo teplou sprchu před spaním.
-
-### 😴 Spánková potřeba pro dnešní noc (${sleepNeed}h)
-Protože tělo bojuje se zánětem, vaše spánková potřeba pro dnešek je **${sleepNeed} hodin**. Zkuste jít spát o 45 minut dříve než obvykle.`;
-      } else if (recoveryScore < 67) {
-        mockResponse = `### 🌿 Zhodnocení stavu zánětu a regenerace\nVaše regenerace je na **${recoveryScore}%** a Připravenost k tréninku je **${trainingReadiness}% (${readinessLabel})**. Doba do plné regenerace je odhadována na **${recoveryTimeHours}h**. Tělo je ve stabilním udržovacím stavu.
-
-### 🎯 Doporučená zátěž (Strain Target: ${targetStrain} / 21)
-Dnes je skvělý den pro **aktivní regeneraci**. Můžete zařadit lehkou procházku, nenáročné protažení na podložce nebo volnou jízdu na kole bez vysoké tepovky. Vyhněte se tréninku do vyčerpání.
-
-### 🛡️ Protizánětlivá péče & Výživa
-* **Omega-3 & Zdravé tuky:** Zařaďte do jídelníčku hrst vlašských ořechů, lněná semínka nebo rybu.
-* **Jemná mobilita:** 15 minut lehkého uvolnění pomůže odvodu toxinů.
-
-### 😴 Spánková potřeba pro dnešní noc (${sleepNeed}h)
-Doporučená délka spánku pro dnešní noc je **${sleepNeed} hodin**.`;
-      } else {
-        mockResponse = `### 🌿 Zhodnocení stavu zánětu a regenerace\nSkvělá zpráva! Vaše tělo je plně regenerované (Recovery **${recoveryScore}%**), Připravenost k tréninku je **${trainingReadiness}% (${readinessLabel})** a Doba regenerace je **${recoveryTimeHours}h**.
-
-### 🎯 Doporučená zátěž (Strain Target: ${targetStrain} / 21)
-Dnes má tělo zelenou pro **plnohodnotný trénink nebo aktivní den** (běh nebo jízdu na kole). Stále si však všímejte signálů těla a nepřesahujte rozumnou hranici.
-
-### 🛡️ Protizánětlivá péče & Výživa
-* **Kvalitní doplňování paliva:** Nezapomeňte po tréninku doplnit sacharidy a kvalitní bílkoviny pro rychlou obnovu tkání.
-* **Hořčík:** Večer zařaďte hořčík (bisglycinát) pro podporu svalové relaxace.
-
-### 😴 Spánková potřeba pro dnešní noc (${sleepNeed}h)
-Spánková potřeba je **${sleepNeed} hodin**.`;
-      }
-      
-      await new Promise(r => setTimeout(r, 1200));
+      await new Promise(r => setTimeout(r, 1000));
+      const mockResponse = getFallbackPlan();
       return NextResponse.json({ 
         plan: mockResponse, 
         recoveryScore, 
@@ -153,9 +159,12 @@ Spánková potřeba je **${sleepNeed} hodin**.`;
       });
     }
 
-    const ai = new GoogleGenAI({ apiKey });
-    
-    const prompt = `
+    let planText = '';
+
+    try {
+      const ai = new GoogleGenAI({ apiKey });
+      
+      const prompt = `
 Jsi empatický, lidský zdravotní a regenerační kouč specializovaný na péči o lidi s chronickými záněty a prevenci vzplanutí zánětu.
 Řídíš se fúzí nejlepších metodologií z WHOOP (Recovery %, Strain Target 0–21, Sleep Need), ELONGA (ANS rovnováha) a GARMIN (Připravenost k tréninku / Training Readiness & Doba regenerace / Recovery Time).
 
@@ -195,29 +204,30 @@ FORMÁT ODPOVĚDI (Použij přesně tyto Markdown nadpisy):
 (Krátké doporučení k večernímu režimu.)
 `;
 
-    const modelsToTry = ['gemini-3.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
-    let planText = '';
-    
-    for (const modelName of modelsToTry) {
-      try {
-        const response = await ai.models.generateContent({
-          model: modelName,
-          contents: prompt,
-        });
-        if (response.text) {
-          planText = response.text;
-          break;
-        }
-      } catch (e: any) {
-        console.warn(`Model ${modelName} failed:`, e.message);
-        if (modelName === modelsToTry[modelsToTry.length - 1]) {
-          throw e;
+      const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+      
+      for (const modelName of modelsToTry) {
+        try {
+          const response = await ai.models.generateContent({
+            model: modelName,
+            contents: prompt,
+          });
+          if (response.text) {
+            planText = response.text;
+            break;
+          }
+        } catch (e: any) {
+          console.warn(`Model ${modelName} failed:`, e.message);
         }
       }
+    } catch (aiErr: any) {
+      console.warn("AI generation exception, falling back to rule engine:", aiErr.message);
     }
 
+    // Fail-safe: Pokud AI selže kvůli 429 Quota Exceeded nebo síti, použijeme pravidlový motor
     if (!planText) {
-      throw new Error("Nepodařilo se vygenerovat plán ze žádného dostupného modelu.");
+      console.log("AI API call failed or quota exceeded. Using smart rule-based fallback.");
+      planText = getFallbackPlan();
     }
 
     // Save the newly generated plan to Supabase

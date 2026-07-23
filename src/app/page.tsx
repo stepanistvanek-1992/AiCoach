@@ -129,7 +129,17 @@ export default function Home() {
           alert(`Doporučení bylo vygenerováno, ale uložení do databáze selhalo: ${data.saveError}`);
         }
       } else {
-        alert(data.error || 'Chyba při generování doporučení.');
+        let errMessage = 'Chyba při generování doporučení.';
+        if (data.error) {
+          if (typeof data.error === 'string' && data.error.includes('Quota exceeded')) {
+            errMessage = 'Aktivován záložní regenerační režim. Vyzkoušejte to prosím znovu.';
+          } else if (typeof data.error === 'object') {
+            errMessage = data.error.message || JSON.stringify(data.error);
+          } else {
+            errMessage = String(data.error);
+          }
+        }
+        alert(errMessage);
       }
     } catch (err: any) {
       alert(err.message || 'Došlo k chybě připojení.');
