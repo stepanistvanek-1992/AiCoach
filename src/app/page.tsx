@@ -16,7 +16,15 @@ export default function Home() {
   const [yesterdayActivity, setYesterdayActivity] = useState('Odpočinek / Nic');
   
   const [loading, setLoading] = useState(false);
-  const [plan, setPlan] = useState<{ text: string, score: number, targetStrain: number, sleepNeed: number } | null>(null);
+  const [plan, setPlan] = useState<{ 
+    text: string, 
+    score: number, 
+    targetStrain: number, 
+    sleepNeed: number,
+    trainingReadiness: number,
+    readinessLabel: string,
+    recoveryTimeHours: number
+  } | null>(null);
 
   // Dashboard stavy
   const [history, setHistory] = useState<TrainingRecord[]>([]);
@@ -112,7 +120,10 @@ export default function Home() {
           text: data.plan, 
           score: data.recoveryScore,
           targetStrain: data.targetStrain || 8.0,
-          sleepNeed: data.sleepNeed || 8.0
+          sleepNeed: data.sleepNeed || 8.0,
+          trainingReadiness: data.trainingReadiness ?? data.recoveryScore,
+          readinessLabel: data.readinessLabel || 'Střední',
+          recoveryTimeHours: data.recoveryTimeHours ?? 0
         });
         if (data.saveError) {
           alert(`Doporučení bylo vygenerováno, ale uložení do databáze selhalo: ${data.saveError}`);
@@ -259,6 +270,21 @@ export default function Home() {
                     <div className="pillar-title">3. Spánek Dnes</div>
                     <div className="pillar-value" style={{ color: 'var(--accent-blue)' }}>{plan.sleepNeed}h</div>
                     <div className="pillar-subtitle">Cílový odpočinek</div>
+                  </div>
+                </div>
+
+                {/* GARMIN METRICS (Připravenost k tréninku & Doba regenerace) */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.75rem', width: '100%' }}>
+                  <div className="pillar-card" style={{ borderTop: '3px solid #ffcc00' }}>
+                    <div className="pillar-title">Připravenost</div>
+                    <div className="pillar-value" style={{ color: '#ffcc00', fontSize: '1.4rem' }}>{plan.trainingReadiness}%</div>
+                    <div className="pillar-subtitle">{plan.readinessLabel}</div>
+                  </div>
+
+                  <div className="pillar-card" style={{ borderTop: '3px solid #ff9500' }}>
+                    <div className="pillar-title">Doba regenerace</div>
+                    <div className="pillar-value" style={{ color: '#ff9500', fontSize: '1.4rem' }}>{plan.recoveryTimeHours}h</div>
+                    <div className="pillar-subtitle">Zbývá odpočinku</div>
                   </div>
                 </div>
               </div>
